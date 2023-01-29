@@ -160,6 +160,8 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
     $config['max_concurrent_requests'] = 10;
 
+    $config['sleep_between_batches'] = 5;
+
     return $config;
 
   }
@@ -183,6 +185,17 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
         'The maximum number of concurrent requests to send in parallel. Setting this value too high may result denial-of-service protections being triggered at the host or reverse proxy level so care is advised.'
       ),
       '#default_value'  => $config['max_concurrent_requests'],
+    ];
+
+    $form['sleep_between_batches'] = [
+      '#type'           => 'number',
+      '#min'            => 1,
+      '#step'           => 1,
+      '#title'          => $this->t('Sleep between batches'),
+      '#description'    => $this->t(
+        'Time in seconds to sleep between batches. Setting this value too low may result denial-of-service protections being triggered at the host or reverse proxy level so care is advised.'
+      ),
+      '#default_value'  => $config['sleep_between_batches'],
     ];
 
     $form['verify'] = [
@@ -289,9 +302,10 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    */
   public function warmMultiple(array $items = []) {
 
-    $maxConcurrentRequests = (int) $this->getConfiguration()[
-      'max_concurrent_requests'
-    ];
+    /** @var array */
+    $config = $this->getConfiguration();
+
+    $maxConcurrentRequests = (int) $config['max_concurrent_requests'];
 
     // Default to one request at a time.
     if ($maxConcurrentRequests <= 0) {
@@ -303,7 +317,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     // @see \Drupal\warmer_cdn\Plugin\warmer\UserInputParserTrait
     $headers = [];
 
-    $verify = (bool) $this->getConfiguration()['verify'];
+    $verify = (bool) $config['verify'];
 
     /** @var \GuzzleHttp\Promise\PromiseInterface[] */
     $promises = [];
@@ -350,6 +364,14 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     // Wait for remaining requests to complete, if any.
     if (!empty($promises)) {
       Utils::all($promises)->wait();
+    }
+
+    // If a sleep value is configured, use it.
+    //
+    // @todo Is \sleep() good enough for this or should a more advanced solution
+    //   be found?
+    if ($config['sleep_between_batches'] > 0) {
+      \sleep((int) $config['sleep_between_batches']);
     }
 
     return $count;

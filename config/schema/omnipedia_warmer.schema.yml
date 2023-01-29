@@ -15,3 +15,6 @@ warmer.settings.warmer_plugin.omnipedia_wiki_node_cdn:
     max_concurrent_requests:
       label: 'Maximum number of concurrent HTTP requests'
       type: integer
+    sleep_between_batches:
+      label: 'Sleep between batches'
+      type: integer
