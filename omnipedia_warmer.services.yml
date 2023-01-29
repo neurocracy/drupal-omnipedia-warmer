@@ -1,0 +1,7 @@
+services:
+
+  # Our logger channel.
+  logger.channel.omnipedia_warmer:
+    class: Drupal\Core\Logger\LoggerChannel
+    factory: logger.factory:get
+    arguments: ['omnipedia_warmer']
