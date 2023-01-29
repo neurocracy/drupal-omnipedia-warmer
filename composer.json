@@ -1,0 +1,17 @@
+{
+  "name": "drupal/omnipedia_warmer",
+  "description": "Omnipedia - Warmer",
+  "type": "drupal-custom-module",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Ambient.Impact",
+      "homepage": "https://ambientimpact.com/",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": "^8",
+    "drupal/warmer": "^2.0"
+  }
+}
