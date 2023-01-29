@@ -1,0 +1,17 @@
+warmer.settings.warmer_plugin.omnipedia_wiki_node_cdn:
+  type: mapping
+  mapping:
+    id:
+      type: string
+    frequency:
+      label: 'Frequency'
+      type: integer
+    batchSize:
+      label: 'Batch size'
+      type: integer
+    verify:
+      label: 'Enable HTTPS verification'
+      type: boolean
+    max_concurrent_requests:
+      label: 'Maximum number of concurrent HTTP requests'
+      type: integer
