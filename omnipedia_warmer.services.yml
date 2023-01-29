@@ -5,3 +5,9 @@ services:
     class: Drupal\Core\Logger\LoggerChannel
     factory: logger.factory:get
     arguments: ['omnipedia_warmer']
+
+  omnipedia.warmer_info:
+    class: Drupal\omnipedia_warmer\Service\WarmerInfo
+    arguments:
+      - '@entity_type.manager'
+      - '@omnipedia_user.permission_hashes'

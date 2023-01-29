@@ -1,3 +1,7 @@
+🛑🛑🛑 ***SUPER MEGA TURBO IMPORTANT: This branch contains a `omnipedia_wiki_node` plug-in which is not yet ready for production and likely has security issues. Do not use until this warning is removed. See [the roadmap](https://github.com/neurocracy/drupal-omnipedia-warmer/issues/1) for details and progress.*** 🛑🛑🛑
+
+----
+
 This contains the source files for the "*Omnipedia - Warmer*" Drupal module, which
 provides cache warming-related functionality for [Omnipedia](https://omnipedia.app/).
 
@@ -30,6 +34,8 @@ Follow the Composer installation instructions for these dependencies first:
 * The following Omnipedia modules:
 
   * [`omnipedia_core`](https://github.com/neurocracy/drupal-omnipedia-core)
+
+  * [`omnipedia_user`](https://github.com/neurocracy/drupal-omnipedia-user)
 
 ----
 
