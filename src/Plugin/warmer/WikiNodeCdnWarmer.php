@@ -182,7 +182,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       '#step'           => 1,
       '#title'          => $this->t('Maximum number of concurrent HTTP requests'),
       '#description'    => $this->t(
-        'The maximum number of concurrent requests to send in parallel. Setting this value too high may result denial-of-service protections being triggered at the host or reverse proxy level so care is advised.'
+        'The maximum number of requests to send in parallel. Setting this value too high may result in denial-of-service protections being triggered at the host or reverse proxy level so care is advised.'
       ),
       '#default_value'  => $config['max_concurrent_requests'],
     ];
@@ -193,7 +193,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       '#step'           => 1,
       '#title'          => $this->t('Sleep between batches'),
       '#description'    => $this->t(
-        'Time in seconds to sleep between batches. Setting this value too low may result denial-of-service protections being triggered at the host or reverse proxy level so care is advised.'
+        'Time in seconds to sleep between batches. Setting this value too low may result in denial-of-service protections being triggered at the host or reverse proxy level so care is advised.'
       ),
       '#default_value'  => $config['sleep_between_batches'],
     ];
