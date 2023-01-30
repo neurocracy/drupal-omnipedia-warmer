@@ -182,7 +182,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       '#step'           => 1,
       '#title'          => $this->t('Maximum number of concurrent HTTP requests'),
       '#description'    => $this->t(
-        'The maximum number of requests to send in parallel. Setting this value too high may result in denial-of-service protections being triggered at the host or reverse proxy level so care is advised.'
+        '<p>The maximum number of requests to send in parallel.</p><p><em>Setting this value too high may result in denial-of-service protections being triggered at the host or reverse proxy level so care is advised.</em></p>'
       ),
       '#default_value'  => $config['max_concurrent_requests'],
     ];
@@ -193,7 +193,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       '#step'           => 1,
       '#title'          => $this->t('Sleep between batches'),
       '#description'    => $this->t(
-        'Time in seconds to sleep between batches. Setting this value too low may result in denial-of-service protections being triggered at the host or reverse proxy level so care is advised.'
+        '<p>Time in seconds to sleep between batches.</p><p><em>Setting this value too low may result in denial-of-service protections being triggered at the host or reverse proxy level so care is advised.</em></p>'
       ),
       '#default_value'  => $config['sleep_between_batches'],
     ];
@@ -202,7 +202,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       '#type'           => 'checkbox',
       '#title'          => $this->t('Enable HTTPS verification'),
       '#description'    => $this->t(
-        'Enable HTTPS verification. It\'s recommended to keep this checked for security reasons and only intended for local testing with self-signed certificates.'
+        '<p>Enable HTTPS verification.</p><p><em>It\'s recommended to keep this checked for security reasons and only intended for local testing with self-signed certificates.</em></p>'
       ),
       '#default_value'  => $config['verify'] ?? true,
     ];
