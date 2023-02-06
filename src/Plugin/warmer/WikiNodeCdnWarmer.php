@@ -41,6 +41,20 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WikiNodeCdnWarmer extends WarmerPluginBase {
 
   /**
+   * The environment variable name to attempt to retrieve the host from.
+   */
+  protected const HOST_ENV = 'DRUPAL_PRIMARY_HOST';
+
+  /**
+   * The host name to rewrite node URLs to.
+   *
+   * @var string
+   *
+   * @see $this->rewriteUrl()
+   */
+  protected string $host;
+
+  /**
    * An array of node IDs (nids) to warm, keyed by their revision IDs.
    *
    * @var array|null
@@ -101,6 +115,18 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       $container, $configuration, $pluginId, $pluginDefinition
     );
 
+    // If the host environment variable is set, use that.
+    if (\getenv(self::HOST_ENV) !== false) {
+      $instance->setHost(\getenv(self::HOST_ENV));
+
+    // If not, set it to the host that Symfony says we're being requested from
+    // as a fallback.
+    } else {
+      $instance->setHost(
+        $container->get('request_stack')->getMainRequest()->getHttpHost()
+      );
+    }
+
     $instance->setAddtionalDependencies(
       $container->get('account_switcher'),
       $container->get('http_client'),
@@ -144,6 +170,52 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     $this->loggerChannel    = $loggerChannel;
     $this->nodeStorage      = $nodeStorage;
     $this->userStorage      = $userStorage;
+
+  }
+
+  /**
+   * Set the detected HTTP host.
+   *
+   * @param string $host
+   *   The host, i.e. domain name, without the scheme or path.
+   */
+  public function setHost(string $host): void {
+    $this->host = $host;
+  }
+
+  /**
+   * Rewrite a node URL to force the use of our host.
+   *
+   * This is to work around an issue on DigitalOcean App Platform where the URL
+   * can sometimes return a service's IP address or the oEmbed domain rather
+   * than the primary domain.
+   *
+   * @param string $url
+   *   The URL to rewrite.
+   *
+   * @return string
+   *   The rewritten node URL.
+   */
+  protected function rewriteUrl(string $url): string {
+
+    /** @var array */
+    $parsedUrl = \parse_url($url);
+
+    $parsedUrl['host'] = $this->host;
+
+    /** @var string The URL rewritten to use $this->host. */
+    $rewrittenUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] .
+      $parsedUrl['path'];
+
+    if (!empty($parsedUrl['query'])) {
+      $rewrittenUrl .= '?' . $parsedUrl['query'];
+    }
+
+    if (!empty($parsedUrl['fragment'])) {
+      $rewrittenUrl .= '#' . $parsedUrl['fragment'];
+    }
+
+    return $rewrittenUrl;
 
   }
 
@@ -327,12 +399,15 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
     foreach ($items as $node) {
 
-      // Fire off an async request to the node's canonical URL.
-      $promises[] = $this->httpClient->requestAsync('GET',
-        (string) $node->toUrl('canonical', ['absolute' => true])->toString(),
-        ['headers' => $headers, 'verify' => $verify]
+      /** @var string The absolute canonical URL for this node. */
+      $url = $this->rewriteUrl((string) $node->toUrl(
+        'canonical', ['absolute' => true]
+      )->toString());
 
-      )->then(function (ResponseInterface $response) use (&$count) {
+      // Fire off an async request to the node URL.
+      $promises[] = $this->httpClient->requestAsync('GET', $url, [
+        'headers' => $headers, 'verify' => $verify,
+      ])->then(function (ResponseInterface $response) use (&$count) {
           if ($response->getStatusCode() < 399) {
             $count++;
           }
