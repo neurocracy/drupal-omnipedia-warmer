@@ -407,11 +407,26 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       // Fire off an async request to the node URL.
       $promises[] = $this->httpClient->requestAsync('GET', $url, [
         'headers' => $headers, 'verify' => $verify,
-      ])->then(function (ResponseInterface $response) use (&$count) {
+      ])->then(function (ResponseInterface $response) use (&$count, $url) {
           if ($response->getStatusCode() < 399) {
+
             $count++;
+
+            $this->loggerChannel->debug(
+              'Successfully requested <code>%url</code>, got response code <code>%code</code>.', [
+                '%url'  => $url,
+                '%code' => $response->getStatusCode(),
+              ]
+            );
+
           }
-        }, function (\Exception $exception) {
+
+        }, function (\Exception $exception) use ($url) {
+
+          /** @var array */
+          $context = Error::decodeException($exception);
+
+          $context['%requestUrl'] = $url;
 
           // Log the exception.
           //
@@ -419,8 +434,8 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
           //   We're replicating what this function does, but using the injected
           //   logger channel.
           $this->loggerChannel->error(
-            '%type: @message in %function (line %line of %file).',
-            Error::decodeException($exception)
+            '%type: @message in %function (line %line of %file).<br>Requested <code>%requestUrl</code>',
+            $context
           );
 
         });
