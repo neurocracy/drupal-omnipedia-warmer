@@ -230,7 +230,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     // Reduce the batch size as some wiki nodes can take a few seconds.
     $config['batchSize'] = 5;
 
-    $config['max_concurrent_requests'] = 10;
+    $config['max_concurrent_requests'] = 2;
 
     $config['sleep_between_batches'] = 5;
 
