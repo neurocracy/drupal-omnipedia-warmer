@@ -406,7 +406,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
       // Fire off an async request to the node URL.
       $promises[] = $this->httpClient->requestAsync('GET', $url, [
-        'headers' => $headers, 'verify' => $verify,
+        'headers' => $headers, 'verify' => $verify, 'connect_timeout' => 100,
       ])->then(function (ResponseInterface $response) use (&$count, $url) {
           if ($response->getStatusCode() < 399) {
 
