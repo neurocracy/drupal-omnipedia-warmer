@@ -412,12 +412,12 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
             $count++;
 
-            $this->loggerChannel->debug(
-              'Successfully requested <code>%url</code>, got response code <code>%code</code>.', [
-                '%url'  => $url,
-                '%code' => $response->getStatusCode(),
-              ]
-            );
+            // $this->loggerChannel->debug(
+            //   'Successfully requested <code>%url</code>, got response code <code>%code</code>.', [
+            //     '%url'  => $url,
+            //     '%code' => $response->getStatusCode(),
+            //   ]
+            // );
 
           }
 
