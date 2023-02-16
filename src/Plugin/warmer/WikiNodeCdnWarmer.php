@@ -400,12 +400,9 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     foreach ($items as $node) {
 
       /** @var string The absolute canonical URL for this node. */
-      $url = (string) $node->toUrl(
+      $url = $this->rewriteUrl((string) $node->toUrl(
         'canonical', ['absolute' => true]
-      )->toString();
-      // $url = $this->rewriteUrl((string) $node->toUrl(
-      //   'canonical', ['absolute' => true]
-      // )->toString());
+      )->toString());
 
       // Fire off an async request to the node URL.
       $promises[] = $this->httpClient->requestAsync('GET', $url, [
