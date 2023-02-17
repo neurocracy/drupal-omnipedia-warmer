@@ -198,6 +198,8 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    *
    * @return string
    *   The rewritten node URL.
+   *
+   * @todo Don't rewrite if primary host not explicitly set.
    */
   protected function rewriteUrl(string $url): string {
 
