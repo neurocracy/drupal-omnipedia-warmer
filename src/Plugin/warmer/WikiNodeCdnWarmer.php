@@ -41,9 +41,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WikiNodeCdnWarmer extends WarmerPluginBase {
 
   /**
-   * The environment variable name to attempt to retrieve the host from.
+   * The Drupal settings name to attempt to retrieve the host from.
    */
-  protected const HOST_ENV = 'DRUPAL_PRIMARY_HOST';
+  protected const SETTINGS_NAME = 'primary_host';
 
   /**
    * The host name to rewrite node URLs to.
@@ -115,9 +115,12 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       $container, $configuration, $pluginId, $pluginDefinition
     );
 
-    // If the host environment variable is set, use that.
-    if (\getenv(self::HOST_ENV) !== false) {
-      $instance->setHost(\getenv(self::HOST_ENV));
+    /** @var \Drupal\Core\Site\Settings */
+    $settings = $container->get('settings');
+
+    // If the primary host setting is set, use that.
+    if (!empty($settings->get(self::SETTINGS_NAME))) {
+      $instance->setHost($settings->get(self::SETTINGS_NAME));
 
     // If not, set it to the host that Symfony says we're being requested from
     // as a fallback.
