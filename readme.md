@@ -17,7 +17,7 @@ part of this codebase is useful or will inspire someone out there.
 
 # Requirements
 
-* [Drupal 9](https://www.drupal.org/download) ([Drupal 8 is end-of-life](https://www.drupal.org/psa-2021-11-30))
+* [Drupal 9.5 or 10](https://www.drupal.org/download) ([Drupal 8 is end-of-life](https://www.drupal.org/psa-2021-11-30))
 
 * PHP 8
 
@@ -60,5 +60,13 @@ In your root `composer.json`, add the following to the `"repositories"` section:
 ### Installing
 
 Once you've completed all of the above, run `composer require
-"drupal/omnipedia_warmer:1.x-dev@dev"` in the root of your project to have
+"drupal/omnipedia_warmer:2.x-dev@dev"` in the root of your project to have
 Composer install this and its required dependencies for you.
+
+----
+
+# Major breaking changes
+
+The following major version bumps indicate breaking changes:
+
+* 2.x - Requires Drupal 9.5 or [Drupal 10](https://www.drupal.org/project/drupal/releases/10.0.0).

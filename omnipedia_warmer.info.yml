@@ -2,7 +2,7 @@ name: Omnipedia - Warmer
 type: module
 description: Provides cache warming-related functionality for Omnipedia.
 package: Omnipedia
-core_version_requirement: ^9
+core_version_requirement: ^9.5 || ^10.0
 
 dependencies:
   - drupal:node
