@@ -3,6 +3,10 @@
   "description": "Omnipedia - Warmer",
   "type": "drupal-custom-module",
   "license": "GPL-2.0-or-later",
+  "support": {
+    "docs": "https://github.com/neurocracy/drupal-omnipedia-warmer",
+    "source": "https://github.com/neurocracy/drupal-omnipedia-warmer"
+  },
   "authors": [
     {
       "name": "Ambient.Impact",
