@@ -9,6 +9,7 @@ use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Utility\Error;
 use Drupal\node\NodeStorageInterface;
 use Drupal\omnipedia_core\Entity\Node;
+use Drupal\omnipedia_core\Service\WikiNodeAccessInterface;
 use Drupal\user\UserInterface;
 use Drupal\user\UserStorageInterface;
 use Drupal\warmer\Plugin\WarmerPluginBase;
@@ -103,6 +104,13 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
   protected UserStorageInterface $userStorage;
 
   /**
+   * The Omnipedia wiki node access service.
+   *
+   * @var \Drupal\omnipedia_core\Service\WikiNodeAccessInterface
+   */
+  protected WikiNodeAccessInterface $wikiNodeAccess;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(
@@ -135,7 +143,8 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       $container->get('http_client'),
       $container->get('logger.channel.omnipedia_warmer'),
       $container->get('entity_type.manager')->getStorage('node'),
-      $container->get('entity_type.manager')->getStorage('user')
+      $container->get('entity_type.manager')->getStorage('user'),
+      $container->get('omnipedia.wiki_node_access')
     );
 
     return $instance;
@@ -159,13 +168,17 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    *
    * @param \Drupal\user\UserStorageInterface $userStorage
    *   The Drupal user entity storage.
+   *
+   * @param \Drupal\omnipedia_core\Service\WikiNodeAccessInterface $wikiNodeAccess
+   *   The Omnipedia wiki node access service.
    */
   public function setAddtionalDependencies(
     AccountSwitcherInterface  $accountSwitcher,
     ClientInterface           $httpClient,
     LoggerInterface           $loggerChannel,
     NodeStorageInterface      $nodeStorage,
-    UserStorageInterface      $userStorage
+    UserStorageInterface      $userStorage,
+    WikiNodeAccessInterface   $wikiNodeAccess
   ): void {
 
     $this->accountSwitcher  = $accountSwitcher;
@@ -173,6 +186,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     $this->loggerChannel    = $loggerChannel;
     $this->nodeStorage      = $nodeStorage;
     $this->userStorage      = $userStorage;
+    $this->wikiNodeAccess   = $wikiNodeAccess;
 
   }
 
@@ -303,6 +317,13 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
     /** @var \Drupal\user\UserInterface The anonymous user entity. */
     $anonymousUser = $this->userStorage->load(0);
+
+    // Return an empty array if the anonymous role does not have permissions to
+    // access content to begin with. This is necessary because the entity query
+    // does not seem to take this into account.
+    if (!$this->wikiNodeAccess->canUserAccessAnyWikiNode($anonymousUser)) {
+      return [];
+    }
 
     // Switch to the anonymous user so that the node entity query only returns
     // nodes anonymous users have access to.
