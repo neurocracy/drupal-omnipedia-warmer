@@ -7,6 +7,7 @@ namespace Drupal\omnipedia_warmer\Plugin\warmer;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Form\SubformStateInterface;
 use Drupal\Core\Session\AccountSwitcherInterface;
+use Drupal\Core\Site\MaintenanceModeInterface;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\Utility\Error;
@@ -88,6 +89,9 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    * @param \Psr\Log\LoggerInterface $loggerChannel
    *   Our logger channel.
    *
+   * @param \Drupal\Core\Site\MaintenanceModeInterface $maintenanceMode
+   *   The Drupal maintenance mode service.
+   *
    * @param \Drupal\node\NodeStorageInterface $nodeStorage
    *   The Drupal node entity storage.
    *
@@ -111,16 +115,17 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    */
   public function __construct(
     array $configuration, $pluginId, $pluginDefinition,
-    protected readonly AccountSwitcherInterface  $accountSwitcher,
-    protected readonly ClientInterface           $httpClient,
-    protected readonly LoggerInterface           $loggerChannel,
-    protected readonly NodeStorageInterface      $nodeStorage,
+    protected readonly AccountSwitcherInterface $accountSwitcher,
+    protected readonly ClientInterface          $httpClient,
+    protected readonly LoggerInterface          $loggerChannel,
+    protected readonly MaintenanceModeInterface $maintenanceMode,
+    protected readonly NodeStorageInterface     $nodeStorage,
     RequestStack    $requestStack,
     Settings        $settings,
     StateInterface  $state,
     TimeInterface   $time,
-    protected readonly UserStorageInterface      $userStorage,
-    protected readonly WikiNodeAccessInterface   $wikiNodeAccess
+    protected readonly UserStorageInterface     $userStorage,
+    protected readonly WikiNodeAccessInterface  $wikiNodeAccess
   ) {
 
     parent::__construct(
@@ -167,6 +172,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       $container->get('account_switcher'),
       $container->get('http_client'),
       $container->get('logger.channel.omnipedia_warmer'),
+      $container->get('maintenance_mode'),
       $container->get('entity_type.manager')->getStorage('node'),
       $container->get('request_stack'),
       $container->get('settings'),
@@ -310,6 +316,17 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     // access content to begin with. This is necessary because the entity query
     // does not seem to take this into account.
     if (!$this->wikiNodeAccess->canUserAccessAnyWikiNode($anonymousUser)) {
+      return [];
+    }
+
+    // If maintenance mode is enabled and the anonymous user is not exempt,
+    // return an empty array both because they won't be able to access the nodes
+    // and also to avoid caching the responses at both the Drupal and reverse
+    // proxy levels.
+    if (
+      $this->state->get('system.maintenance_mode') &&
+      !$this->maintenanceMode->exempt($anonymousUser)
+    ) {
       return [];
     }
 
