@@ -42,6 +42,10 @@ use Symfony\Component\HttpFoundation\RequestStack;
  *
  * @see \Drupal\warmer_cdn\Plugin\warmer\UserInputParserTrait
  *   Can be used to parse and validate headers if/when we implement that.
+ *
+ * @see https://api.drupal.org/api/drupal/core%21modules%21node%21node.module/group/node_access
+ *   API documentation on limitations of node access checking with entity
+ *   queries which explains that they don't check published status.
  */
 class WikiNodeCdnWarmer extends WarmerPluginBase {
 
@@ -313,14 +317,22 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     // nodes anonymous users have access to.
     $this->accountSwitcher->switchTo($anonymousUser);
 
-    // This builds and executes a \Drupal\Core\Entity\Query\QueryInterface to
-    // get all available wiki node IDs (nids).
-    /** @var array */
-    $queryResult = ($this->nodeStorage->getQuery())
+    /** @var \Drupal\Core\Entity\Query\QueryInterface */
+    $query = ($this->nodeStorage->getQuery())
       ->condition('type', Node::getWikiNodeType())
-      // This will limit results to only nodes that the user has access to.
+      // This should limit results to only nodes that the user has access to but
+      // in practice doesn't fully check access due to the significant
+      // performance overhead.
+      //
+      // @see https://api.drupal.org/api/drupal/core%21modules%21node%21node.module/group/node_access
       ->accessCheck(true)
-      ->execute();
+      // Generally speaking, an anonymous user is very unlikely to have
+      // permission to view unpublished nodes, so exclude those. This needs to
+      // be here as the access check above does not take this into account.
+      ->condition('status', 1);
+
+    /** @var array */
+    $queryResult = $query->execute();
 
     // Switch back to the previous user, if any.
     $this->accountSwitcher->switchBack();
@@ -359,6 +371,9 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    */
   public function loadMultiple(array $ids = []) {
 
+    /** @var \Drupal\user\UserInterface The anonymous user entity. */
+    $anonymousUser = $this->userStorage->load(0);
+
     /** @var array */
     $items = [];
 
@@ -367,7 +382,11 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       /** \Drupal\omnipedia_core\Entity\NodeInterface|null */
       $node = $this->nodeStorage->load($nid);
 
-      if (!\is_object($node)) {
+      if (
+        !\is_object($node) ||
+        // Perform one last direct access check here to make sure.
+        !$node->access('view', $anonymousUser)
+      ) {
         continue;
       }
 
