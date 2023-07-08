@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\omnipedia_warmer\Plugin\warmer;
 
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Form\SubformStateInterface;
 use Drupal\Core\Session\AccountSwitcherInterface;
+use Drupal\Core\State\StateInterface;
 use Drupal\Core\Utility\Error;
 use Drupal\node\NodeStorageInterface;
 use Drupal\omnipedia_core\Entity\Node;
@@ -69,46 +71,49 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
   protected ?array $idsToWarm = null;
 
   /**
-   * The Drupal account switcher service.
+   * {@inheritdoc}
    *
-   * @var \Drupal\Core\Session\AccountSwitcherInterface
+   * @param \Drupal\Core\Session\AccountSwitcherInterface $accountSwitcher
+   *   The Drupal account switcher service.
+   *
+   * @param \GuzzleHttp\ClientInterface $httpClient
+   *   The Guzzle HTTP client.
+   *
+   * @param \Psr\Log\LoggerInterface $loggerChannel
+   *   Our logger channel.
+   *
+   * @param \Drupal\node\NodeStorageInterface $nodeStorage
+   *   The Drupal node entity storage.
+   *
+   * @param \Drupal\Core\State\StateInterface
+   *   The Drupal state service.
+   *
+   * @param \Drupal\Component\Datetime\TimeInterface
+   *   The Drupal time service.
+   *
+   * @param \Drupal\user\UserStorageInterface $userStorage
+   *   The Drupal user entity storage.
+   *
+   * @param \Drupal\omnipedia_core\Service\WikiNodeAccessInterface $wikiNodeAccess
+   *   The Omnipedia wiki node access service.
    */
-  protected AccountSwitcherInterface $accountSwitcher;
+  public function __construct(
+    array $configuration, $pluginId, $pluginDefinition,
+    protected readonly AccountSwitcherInterface  $accountSwitcher,
+    protected readonly ClientInterface           $httpClient,
+    protected readonly LoggerInterface           $loggerChannel,
+    protected readonly NodeStorageInterface      $nodeStorage,
+    StateInterface $state,
+    TimeInterface $time,
+    protected readonly UserStorageInterface      $userStorage,
+    protected readonly WikiNodeAccessInterface   $wikiNodeAccess
+  ) {
 
-  /**
-   * The Guzzle HTTP client.
-   *
-   * @var \GuzzleHttp\ClientInterface
-   */
-  protected ClientInterface $httpClient;
+    parent::__construct(
+      $configuration, $pluginId, $pluginDefinition, $state, $time
+    );
 
-  /**
-   * Our logger channel.
-   *
-   * @var \Psr\Log\LoggerInterface
-   */
-  protected LoggerInterface $loggerChannel;
-
-  /**
-   * The Drupal node entity storage.
-   *
-   * @var \Drupal\node\NodeStorageInterface
-   */
-  protected NodeStorageInterface $nodeStorage;
-
-  /**
-   * The Drupal user entity storage.
-   *
-   * @var \Drupal\user\UserStorageInterface
-   */
-  protected UserStorageInterface $userStorage;
-
-  /**
-   * The Omnipedia wiki node access service.
-   *
-   * @var \Drupal\omnipedia_core\Service\WikiNodeAccessInterface
-   */
-  protected WikiNodeAccessInterface $wikiNodeAccess;
+  }
 
   /**
    * {@inheritdoc}
@@ -118,9 +123,30 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     array $configuration, $pluginId, $pluginDefinition
   ) {
 
+    // This replicates what WarmerPluginBase::create() does so that we don't
+    // need to call parent::create() in order to use PHP 8 constructor property
+    // promotion for all our dependencies.
+    $warmersConfig = $container->get('config.factory')
+      ->get('warmer.settings')
+      ->get('warmers');
+
+    $pluginSettings = empty(
+      $warmersConfig[$pluginId]
+    ) ? [] : $warmersConfig[$pluginId];
+
+    $configuration = \array_merge($pluginSettings, $configuration);
+
     /** @var \Drupal\warmer\Plugin\WarmerInterface */
-    $instance = parent::create(
-      $container, $configuration, $pluginId, $pluginDefinition
+    $instance = new static(
+      $configuration, $pluginId, $pluginDefinition,
+      $container->get('account_switcher'),
+      $container->get('http_client'),
+      $container->get('logger.channel.omnipedia_warmer'),
+      $container->get('entity_type.manager')->getStorage('node'),
+      $container->get('state'),
+      $container->get('datetime.time'),
+      $container->get('entity_type.manager')->getStorage('user'),
+      $container->get('omnipedia.wiki_node_access')
     );
 
     /** @var \Drupal\Core\Site\Settings */
@@ -138,55 +164,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       );
     }
 
-    $instance->setAddtionalDependencies(
-      $container->get('account_switcher'),
-      $container->get('http_client'),
-      $container->get('logger.channel.omnipedia_warmer'),
-      $container->get('entity_type.manager')->getStorage('node'),
-      $container->get('entity_type.manager')->getStorage('user'),
-      $container->get('omnipedia.wiki_node_access')
-    );
-
     return $instance;
-
-  }
-
-  /**
-   * Set additional dependencies.
-   *
-   * @param \Drupal\Core\Session\AccountSwitcherInterface $accountSwitcher
-   *   The Drupal account switcher service.
-   *
-   * @param \GuzzleHttp\ClientInterface $httpClient
-   *   The Guzzle HTTP client.
-   *
-   * @param \Psr\Log\LoggerInterface $loggerChannel
-   *   Our logger channel.
-   *
-   * @param \Drupal\node\NodeStorageInterface $nodeStorage
-   *   The Drupal node entity storage.
-   *
-   * @param \Drupal\user\UserStorageInterface $userStorage
-   *   The Drupal user entity storage.
-   *
-   * @param \Drupal\omnipedia_core\Service\WikiNodeAccessInterface $wikiNodeAccess
-   *   The Omnipedia wiki node access service.
-   */
-  public function setAddtionalDependencies(
-    AccountSwitcherInterface  $accountSwitcher,
-    ClientInterface           $httpClient,
-    LoggerInterface           $loggerChannel,
-    NodeStorageInterface      $nodeStorage,
-    UserStorageInterface      $userStorage,
-    WikiNodeAccessInterface   $wikiNodeAccess
-  ): void {
-
-    $this->accountSwitcher  = $accountSwitcher;
-    $this->httpClient       = $httpClient;
-    $this->loggerChannel    = $loggerChannel;
-    $this->nodeStorage      = $nodeStorage;
-    $this->userStorage      = $userStorage;
-    $this->wikiNodeAccess   = $wikiNodeAccess;
 
   }
 
