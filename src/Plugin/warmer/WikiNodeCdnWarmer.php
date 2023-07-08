@@ -7,6 +7,7 @@ namespace Drupal\omnipedia_warmer\Plugin\warmer;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Form\SubformStateInterface;
 use Drupal\Core\Session\AccountSwitcherInterface;
+use Drupal\Core\Site\Settings;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\Utility\Error;
 use Drupal\node\NodeStorageInterface;
@@ -20,6 +21,7 @@ use GuzzleHttp\Promise\Utils;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * The Omnipedia wiki node (CDN) cache warmer plug-in.
@@ -85,6 +87,12 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    * @param \Drupal\node\NodeStorageInterface $nodeStorage
    *   The Drupal node entity storage.
    *
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   *   The Symfony request stack.
+   *
+   * @param \Drupal\Core\Site\Settings $settings
+   *   The Drupal site settings.
+   *
    * @param \Drupal\Core\State\StateInterface
    *   The Drupal state service.
    *
@@ -103,8 +111,10 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     protected readonly ClientInterface           $httpClient,
     protected readonly LoggerInterface           $loggerChannel,
     protected readonly NodeStorageInterface      $nodeStorage,
-    StateInterface $state,
-    TimeInterface $time,
+    RequestStack    $requestStack,
+    Settings        $settings,
+    StateInterface  $state,
+    TimeInterface   $time,
     protected readonly UserStorageInterface      $userStorage,
     protected readonly WikiNodeAccessInterface   $wikiNodeAccess
   ) {
@@ -112,6 +122,18 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     parent::__construct(
       $configuration, $pluginId, $pluginDefinition, $state, $time
     );
+
+    // If the primary host setting is set, use that.
+    if (!empty($settings->get(self::SETTINGS_NAME))) {
+      $this->setHost($settings->get(self::SETTINGS_NAME));
+
+    // If not, set it to the host that Symfony says we're being requested from
+    // as a fallback.
+    } else {
+      $this->setHost(
+        $requestStack->getMainRequest()->getHttpHost()
+      );
+    }
 
   }
 
@@ -136,35 +158,19 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
     $configuration = \array_merge($pluginSettings, $configuration);
 
-    /** @var \Drupal\warmer\Plugin\WarmerInterface */
-    $instance = new static(
+    return new static(
       $configuration, $pluginId, $pluginDefinition,
       $container->get('account_switcher'),
       $container->get('http_client'),
       $container->get('logger.channel.omnipedia_warmer'),
       $container->get('entity_type.manager')->getStorage('node'),
+      $container->get('request_stack'),
+      $container->get('settings'),
       $container->get('state'),
       $container->get('datetime.time'),
       $container->get('entity_type.manager')->getStorage('user'),
       $container->get('omnipedia.wiki_node_access')
     );
-
-    /** @var \Drupal\Core\Site\Settings */
-    $settings = $container->get('settings');
-
-    // If the primary host setting is set, use that.
-    if (!empty($settings->get(self::SETTINGS_NAME))) {
-      $instance->setHost($settings->get(self::SETTINGS_NAME));
-
-    // If not, set it to the host that Symfony says we're being requested from
-    // as a fallback.
-    } else {
-      $instance->setHost(
-        $container->get('request_stack')->getMainRequest()->getHttpHost()
-      );
-    }
-
-    return $instance;
 
   }
 
