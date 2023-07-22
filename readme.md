@@ -19,7 +19,7 @@ part of this codebase is useful or will inspire someone out there.
 
 * [Drupal 9.5 or 10](https://www.drupal.org/download) ([Drupal 8 is end-of-life](https://www.drupal.org/psa-2021-11-30))
 
-* PHP 8
+* PHP 8.1
 
 * [Composer](https://getcomposer.org/)
 
@@ -69,4 +69,8 @@ Composer install this and its required dependencies for you.
 
 The following major version bumps indicate breaking changes:
 
-* 2.x - Requires Drupal 9.5 or [Drupal 10](https://www.drupal.org/project/drupal/releases/10.0.0).
+* 2.x:
+
+  * Requires Drupal 9.5 or [Drupal 10](https://www.drupal.org/project/drupal/releases/10.0.0).
+
+  * Requires PHP 8.1.

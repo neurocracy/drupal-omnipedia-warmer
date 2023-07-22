@@ -15,7 +15,7 @@
     }
   ],
   "require": {
-    "php": "^8",
+    "php": "^8.1",
     "drupal/core": "^9.5 || ^10.0",
     "drupal/omnipedia_core": "4.x-dev@dev",
     "drupal/warmer": "^2.0"

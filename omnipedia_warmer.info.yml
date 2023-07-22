@@ -3,6 +3,7 @@ type: module
 description: Provides cache warming-related functionality for Omnipedia.
 package: Omnipedia
 core_version_requirement: ^9.5 || ^10.0
+php: 8.1
 
 dependencies:
   - drupal:node
