@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace Drupal\omnipedia_warmer\Plugin\warmer;
 
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\SubformStateInterface;
 use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Site\MaintenanceModeInterface;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\Utility\Error;
-use Drupal\node\NodeStorageInterface;
 use Drupal\omnipedia_core\Entity\Node;
 use Drupal\omnipedia_core\Service\WikiNodeAccessInterface;
 use Drupal\user\UserInterface;
-use Drupal\user\UserStorageInterface;
 use Drupal\warmer\Plugin\WarmerPluginBase;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Promise\Utils;
@@ -83,6 +82,9 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    * @param \Drupal\Core\Session\AccountSwitcherInterface $accountSwitcher
    *   The Drupal account switcher service.
    *
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The Drupal entity type manager.
+   *
    * @param \GuzzleHttp\ClientInterface $httpClient
    *   The Guzzle HTTP client.
    *
@@ -91,9 +93,6 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    *
    * @param \Drupal\Core\Site\MaintenanceModeInterface $maintenanceMode
    *   The Drupal maintenance mode service.
-   *
-   * @param \Drupal\node\NodeStorageInterface $nodeStorage
-   *   The Drupal node entity storage.
    *
    * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
    *   The Symfony request stack.
@@ -107,25 +106,21 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    * @param \Drupal\Component\Datetime\TimeInterface
    *   The Drupal time service.
    *
-   * @param \Drupal\user\UserStorageInterface $userStorage
-   *   The Drupal user entity storage.
-   *
    * @param \Drupal\omnipedia_core\Service\WikiNodeAccessInterface $wikiNodeAccess
    *   The Omnipedia wiki node access service.
    */
   public function __construct(
     array $configuration, $pluginId, $pluginDefinition,
-    protected readonly AccountSwitcherInterface $accountSwitcher,
-    protected readonly ClientInterface          $httpClient,
-    protected readonly LoggerInterface          $loggerChannel,
-    protected readonly MaintenanceModeInterface $maintenanceMode,
-    protected readonly NodeStorageInterface     $nodeStorage,
+    protected readonly AccountSwitcherInterface   $accountSwitcher,
+    protected readonly EntityTypeManagerInterface $entityTypeManager,
+    protected readonly ClientInterface            $httpClient,
+    protected readonly LoggerInterface            $loggerChannel,
+    protected readonly MaintenanceModeInterface   $maintenanceMode,
     RequestStack    $requestStack,
     Settings        $settings,
     StateInterface  $state,
     TimeInterface   $time,
-    protected readonly UserStorageInterface     $userStorage,
-    protected readonly WikiNodeAccessInterface  $wikiNodeAccess
+    protected readonly WikiNodeAccessInterface $wikiNodeAccess
   ) {
 
     parent::__construct(
@@ -170,15 +165,14 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     return new static(
       $configuration, $pluginId, $pluginDefinition,
       $container->get('account_switcher'),
+      $container->get('entity_type.manager'),
       $container->get('http_client'),
       $container->get('logger.channel.omnipedia_warmer'),
       $container->get('maintenance_mode'),
-      $container->get('entity_type.manager')->getStorage('node'),
       $container->get('request_stack'),
       $container->get('settings'),
       $container->get('state'),
       $container->get('datetime.time'),
-      $container->get('entity_type.manager')->getStorage('user'),
       $container->get('omnipedia.wiki_node_access')
     );
 
@@ -310,7 +304,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     }
 
     /** @var \Drupal\user\UserInterface The anonymous user entity. */
-    $anonymousUser = $this->userStorage->load(0);
+    $anonymousUser = $this->entityTypeManager->getStorage('user')->load(0);
 
     // Return an empty array if the anonymous role does not have permissions to
     // access content to begin with. This is necessary because the entity query
@@ -335,7 +329,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     $this->accountSwitcher->switchTo($anonymousUser);
 
     /** @var \Drupal\Core\Entity\Query\QueryInterface */
-    $query = ($this->nodeStorage->getQuery())
+    $query = ($this->entityTypeManager->getStorage('node')->getQuery())
       ->condition('type', Node::getWikiNodeType())
       // This should limit results to only nodes that the user has access to but
       // in practice doesn't fully check access due to the significant
@@ -389,7 +383,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
   public function loadMultiple(array $ids = []) {
 
     /** @var \Drupal\user\UserInterface The anonymous user entity. */
-    $anonymousUser = $this->userStorage->load(0);
+    $anonymousUser = $this->entityTypeManager->getStorage('user')->load(0);
 
     /** @var array */
     $items = [];
@@ -397,7 +391,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     foreach ($ids as $revisionId => $nid) {
 
       /** \Drupal\omnipedia_core\Entity\NodeInterface|null */
-      $node = $this->nodeStorage->load($nid);
+      $node = $this->entityTypeManager->getStorage('node')->load($nid);
 
       if (
         !\is_object($node) ||
