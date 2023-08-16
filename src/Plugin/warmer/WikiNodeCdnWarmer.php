@@ -116,28 +116,16 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     protected readonly ClientInterface            $httpClient,
     protected readonly LoggerInterface            $loggerChannel,
     protected readonly MaintenanceModeInterface   $maintenanceMode,
-    RequestStack    $requestStack,
-    Settings        $settings,
+    protected readonly RequestStack               $requestStack,
+    protected readonly Settings                   $settings,
     StateInterface  $state,
     TimeInterface   $time,
-    protected readonly WikiNodeAccessInterface $wikiNodeAccess
+    protected readonly WikiNodeAccessInterface $wikiNodeAccess,
   ) {
 
     parent::__construct(
-      $configuration, $pluginId, $pluginDefinition, $state, $time
+      $configuration, $pluginId, $pluginDefinition, $state, $time,
     );
-
-    // If the primary host setting is set, use that.
-    if (!empty($settings->get(self::SETTINGS_NAME))) {
-      $this->setHost($settings->get(self::SETTINGS_NAME));
-
-    // If not, set it to the host that Symfony says we're being requested from
-    // as a fallback.
-    } else {
-      $this->setHost(
-        $requestStack->getMainRequest()->getHttpHost()
-      );
-    }
 
   }
 
@@ -173,19 +161,35 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
       $container->get('settings'),
       $container->get('state'),
       $container->get('datetime.time'),
-      $container->get('omnipedia.wiki_node_access')
+      $container->get('omnipedia.wiki_node_access'),
     );
 
   }
 
   /**
-   * Set the detected HTTP host.
+   * Get the detected HTTP host.
    *
-   * @param string $host
+   * @return string
    *   The host, i.e. domain name, without the scheme or path.
    */
-  public function setHost(string $host): void {
-    $this->host = $host;
+  protected function getHost(): string {
+
+    if (isset($this->host)) {
+      return $this->host;
+    }
+
+    // If the primary host setting is set, use that.
+    if (!empty($this->settings->get(self::SETTINGS_NAME))) {
+      $this->host = $this->settings->get(self::SETTINGS_NAME);
+
+    // If not, set it to the host that Symfony says we're being requested from
+    // as a fallback.
+    } else {
+      $this->host = $this->requestStack->getMainRequest()->getHttpHost();
+    }
+
+    return $this->host;
+
   }
 
   /**
@@ -208,7 +212,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     /** @var array */
     $parsedUrl = \parse_url($url);
 
-    $parsedUrl['host'] = $this->host;
+    $parsedUrl['host'] = $this->getHost();
 
     /** @var string The URL rewritten to use $this->host. */
     $rewrittenUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] .
