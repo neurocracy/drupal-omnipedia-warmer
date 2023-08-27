@@ -12,7 +12,7 @@ use Drupal\Core\Site\MaintenanceModeInterface;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\Utility\Error;
-use Drupal\omnipedia_core\Entity\Node;
+use Drupal\omnipedia_core\Entity\WikiNodeInfo;
 use Drupal\omnipedia_core\Service\WikiNodeAccessInterface;
 use Drupal\user\UserInterface;
 use Drupal\warmer\Plugin\WarmerPluginBase;
@@ -334,7 +334,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
     /** @var \Drupal\Core\Entity\Query\QueryInterface */
     $query = ($this->entityTypeManager->getStorage('node')->getQuery())
-      ->condition('type', Node::getWikiNodeType())
+      ->condition('type', WikiNodeInfo::TYPE)
       // This should limit results to only nodes that the user has access to but
       // in practice doesn't fully check access due to the significant
       // performance overhead.
