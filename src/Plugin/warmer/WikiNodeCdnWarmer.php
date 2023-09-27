@@ -394,7 +394,7 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
     foreach ($ids as $revisionId => $nid) {
 
-      /** \Drupal\omnipedia_core\Entity\NodeInterface|null */
+      /** \Drupal\node\NodeInterface|null */
       $node = $this->entityTypeManager->getStorage('node')->load($nid);
 
       if (
