@@ -50,7 +50,7 @@ In your root `composer.json`, add the following to the `"repositories"` section:
 ### Installing
 
 Once you've completed all of the above, run `composer require
-"drupal/omnipedia_warmer:2.x-dev@dev"` in the root of your project to have
+"drupal/omnipedia_warmer:^2.0@dev"` in the root of your project to have
 Composer install this and its required dependencies for you.
 
 ----
