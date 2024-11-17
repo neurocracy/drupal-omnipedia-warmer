@@ -1,0 +1,14 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Rebuild container and install the Hux module if not already installed.
+ */
+function omnipedia_warmer_update_92001(): void {
+
+  \Drupal::service('kernel')->invalidateContainer();
+
+  \Drupal::service('module_installer')->install(['hux']);
+
+}
