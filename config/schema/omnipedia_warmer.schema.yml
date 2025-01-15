@@ -3,6 +3,9 @@ warmer.settings.warmer_plugin.omnipedia_wiki_node_cdn:
   mapping:
     id:
       type: string
+    enabled:
+      label: 'Enabled'
+      type: boolean
     frequency:
       label: 'Frequency'
       type: integer

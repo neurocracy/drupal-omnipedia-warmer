@@ -238,6 +238,8 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
     /** @var array */
     $config = parent::defaultConfiguration();
 
+    $config['enabled'] = true;
+
     // Reduce the batch size as some wiki nodes can take a few seconds.
     $config['batchSize'] = 5;
 
@@ -258,6 +260,16 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
 
     /** @var array */
     $config = $this->getConfiguration();
+
+    $form['enabled'] = [
+      '#type'           => 'checkbox',
+      '#title'          => $this->t('Enabled'),
+      '#description'    => $this->t(
+        '<p>Whether this warmer is enabled. If disabled, it won\'t enqueue any further items, but existing items will still be processed.</p>',
+      ),
+      '#default_value'  => $config['enabled'] ?? true,
+      '#weight'         => -1,
+    ];
 
     $form['max_concurrent_requests'] = [
       '#type'           => 'number',
@@ -295,6 +307,22 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function isActive() {
+
+    /** @var array */
+    $config = $this->getConfiguration();
+
+    if (isset($config['enabled']) && $config['enabled'] === false) {
+      return false;
+    }
+
+    return parent::isActive();
+
+  }
+
+  /**
    * Get the IDs to warm, building the array if not already built.
    *
    * @return array
@@ -302,6 +330,13 @@ class WikiNodeCdnWarmer extends WarmerPluginBase {
    * @see $this->idsToWarm
    */
   protected function getIdsToWarm(): array {
+
+    /** @var array */
+    $config = $this->getConfiguration();
+
+    if (isset($config['enabled']) && $config['enabled'] === false) {
+      return [];
+    }
 
     if (\is_array($this->idsToWarm)) {
       return $this->idsToWarm;

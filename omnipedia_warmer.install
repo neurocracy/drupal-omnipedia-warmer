@@ -12,3 +12,25 @@ function omnipedia_warmer_update_92001(): void {
   \Drupal::service('module_installer')->install(['hux']);
 
 }
+/**
+ * Add 'enabled' configuration key to existing omnipedia_wiki_node_cdn warmer.
+ */
+function omnipedia_warmer_update_92002(): void {
+
+  $config = \Drupal::service('config.factory')->getEditable('warmer.settings');
+
+  // Don't do anything if the 'enabled' key already exists.
+  if (\array_key_exists(
+    'enabled', $config->get('warmers.omnipedia_wiki_node_cdn'),
+  ) === true) {
+    return;
+  }
+
+  $config->set('warmers.omnipedia_wiki_node_cdn.enabled', true)->save(true);
+
+  // If you don't clear caches when running updates, the cached config will not
+  // have been updated so we need to clear it ourselves for the new config to
+  // be used.
+  \Drupal::service('cache.config')->delete('warmer.settings');
+
+}
